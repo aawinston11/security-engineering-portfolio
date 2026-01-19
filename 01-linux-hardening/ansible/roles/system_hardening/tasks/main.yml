@@ -1,0 +1,84 @@
+---
+# System Hardening Role
+
+- name: Configure kernel parameters for network security
+  sysctl:
+    name: "{{ item.name }}"
+    value: "{{ item.value }}"
+    state: present
+    sysctl_set: yes
+    reload: yes
+  loop:
+    - { name: net.ipv4.ip_forward, value: '0' }
+    - { name: net.ipv4.conf.all.send_redirects, value: '0' }
+    - { name: net.ipv4.conf.default.send_redirects, value: '0' }
+    - { name: net.ipv4.conf.all.accept_redirects, value: '0' }
+    - { name: net.ipv4.conf.default.accept_redirects, value: '0' }
+    - { name: net.ipv4.conf.all.secure_redirects, value: '0' }
+    - { name: net.ipv4.conf.default.secure_redirects, value: '0' }
+    - { name: net.ipv4.icmp_echo_ignore_broadcasts, value: '1' }
+    - { name: net.ipv4.icmp_ignore_bogus_error_responses, value: '1' }
+    - { name: net.ipv4.conf.all.log_martians, value: '1' }
+    - { name: net.ipv4.conf.default.log_martians, value: '1' }
+    - { name: net.ipv4.tcp_syncookies, value: '1' }
+    - { name: net.ipv6.conf.all.accept_redirects, value: '0' }
+    - { name: net.ipv6.conf.default.accept_redirects, value: '0' }
+
+- name: Make kernel parameters persistent
+  copy:
+    content: |
+      # Network security hardening
+      net.ipv4.ip_forward = 0
+      net.ipv4.conf.all.send_redirects = 0
+      net.ipv4.conf.default.send_redirects = 0
+      net.ipv4.conf.all.accept_redirects = 0
+      net.ipv4.conf.default.accept_redirects = 0
+      net.ipv4.conf.all.secure_redirects = 0
+      net.ipv4.conf.default.secure_redirects = 0
+      net.ipv4.icmp_echo_ignore_broadcasts = 1
+      net.ipv4.icmp_ignore_bogus_error_responses = 1
+      net.ipv4.conf.all.log_martians = 1
+      net.ipv4.conf.default.log_martians = 1
+      net.ipv4.tcp_syncookies = 1
+      net.ipv6.conf.all.accept_redirects = 0
+      net.ipv6.conf.default.accept_redirects = 0
+    dest: /etc/sysctl.d/99-ansible-hardening.conf
+    owner: root
+    group: root
+    mode: '0644'
+
+- name: Configure /tmp with noexec and nosuid
+  mount:
+    path: /tmp
+    src: tmpfs
+    fstype: tmpfs
+    opts: defaults,noexec,nosuid,nodev
+    state: mounted
+
+- name: Configure /var/tmp with noexec and nosuid
+  mount:
+    path: /var/tmp
+    src: /tmp
+    fstype: none
+    opts: bind,noexec,nosuid,nodev
+    state: mounted
+
+- name: Make /tmp and /var/tmp mounts persistent
+  lineinfile:
+    path: /etc/fstab
+    regexp: "^{{ item.regexp }}"
+    line: "{{ item.line }}"
+    state: present
+  loop:
+    - { regexp: '^tmpfs.*\/tmp', line: 'tmpfs /tmp tmpfs defaults,noexec,nosuid,nodev 0 0' }
+    - { regexp: '^\/tmp.*\/var\/tmp', line: '/tmp /var/tmp none bind,noexec,nosuid,nodev 0 0' }
+  when: "'tmpfs /tmp' not in lookup('file', '/etc/fstab')"
+
+- name: Display system hardening summary
+  debug:
+    msg:
+      - "System hardening applied"
+      - "Kernel parameters: Network security enabled"
+      - "/tmp and /var/tmp: noexec, nosuid configured"
+      - "ICMP redirects: Disabled"
+      - "IP forwarding: Disabled"

@@ -1,0 +1,54 @@
+---
+# PAM Configuration Role
+
+- name: Install PAM modules
+  apt:
+    name:
+      - libpam-pwquality
+      - libpam-faillock
+    state: present
+
+- name: Configure password quality requirements
+  lineinfile:
+    path: /etc/pam.d/common-password
+    regexp: "^{{ item.regexp }}"
+    line: "{{ item.line }}"
+    insertafter: "^password.*requisite.*pam_pwquality"
+    state: present
+  loop:
+    - { regexp: '^password.*requisite.*pam_pwquality', line: 'password        requisite                       pam_pwquality.so retry=3 minlen=12 difok=3 ucredit=-1 lcredit=-1 dcredit=-1 ocredit=-1' }
+  when: "'pam_pwquality' not in lookup('file', '/etc/pam.d/common-password')"
+
+- name: Configure account lockout with faillock
+  blockinfile:
+    path: /etc/pam.d/common-auth
+    marker: "# {mark} ANSIBLE MANAGED BLOCK - Account Lockout"
+    block: |
+      auth required pam_faillock.so preauth silent deny=5 unlock_time=900 fail_interval=900
+      auth [success=1 default=bad] pam_unix.so
+      auth [default=die] pam_faillock.so authfail deny=5 unlock_time=900 fail_interval=900
+      auth sufficient pam_faillock.so authsucc deny=5 unlock_time=900 fail_interval=900
+    insertbefore: "^auth.*pam_unix"
+  when: "'pam_faillock' not in lookup('file', '/etc/pam.d/common-auth')"
+
+- name: Configure secure umask
+  lineinfile:
+    path: /etc/pam.d/common-session
+    regexp: '^session.*pam_umask'
+    line: 'session optional pam_umask.so umask=027'
+    insertafter: '^session'
+  when: "'pam_umask' not in lookup('file', '/etc/pam.d/common-session')"
+
+- name: Set default umask in login.defs
+  lineinfile:
+    path: /etc/login.defs
+    regexp: '^UMASK'
+    line: 'UMASK 027'
+
+- name: Display PAM configuration summary
+  debug:
+    msg:
+      - "PAM hardening applied"
+      - "Password complexity: Enabled (min 12 chars, mixed case, numbers, symbols)"
+      - "Account lockout: 5 failed attempts, 15 minute lockout"
+      - "Default umask: 027"

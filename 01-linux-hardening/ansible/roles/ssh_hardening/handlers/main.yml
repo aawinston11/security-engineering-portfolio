@@ -1,0 +1,7 @@
+---
+# Handlers for ssh_hardening role
+
+- name: restart sshd
+  systemd:
+    name: sshd
+    state: restarted

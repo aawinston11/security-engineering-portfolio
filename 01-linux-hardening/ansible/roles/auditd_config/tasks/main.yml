@@ -1,0 +1,78 @@
+---
+# auditd Configuration Role
+
+- name: Install auditd
+  apt:
+    name: auditd
+    state: present
+
+- name: Enable and start auditd
+  systemd:
+    name: auditd
+    enabled: yes
+    state: started
+
+- name: Configure auditd main configuration
+  lineinfile:
+    path: /etc/audit/auditd.conf
+    regexp: "^{{ item.regexp }}"
+    line: "{{ item.line }}"
+  loop:
+    - { regexp: '^max_log_file', line: 'max_log_file = {{ auditd_max_log_file }}' }
+    - { regexp: '^num_logs', line: 'num_logs = {{ auditd_num_logs }}' }
+    - { regexp: '^space_left_action', line: 'space_left_action = email' }
+    - { regexp: '^action_mail_acct', line: 'action_mail_acct = root' }
+    - { regexp: '^admin_space_left_action', line: 'admin_space_left_action = suspend' }
+    - { regexp: '^disk_full_action', line: 'disk_full_action = suspend' }
+    - { regexp: '^disk_error_action', line: 'disk_error_action = suspend' }
+  notify: restart auditd
+
+- name: Configure audit rules for authentication
+  blockinfile:
+    path: /etc/audit/rules.d/50-ansible-hardening.rules
+    marker: "# {mark} ANSIBLE MANAGED BLOCK - Authentication Events"
+    block: |
+      # Authentication events
+      -w /etc/passwd -p wa -k identity
+      -w /etc/group -p wa -k identity
+      -w /etc/shadow -p wa -k identity
+      -w /etc/gshadow -p wa -k identity
+      -w /etc/security/opasswd -p wa -k identity
+      -w /etc/sudoers -p wa -k identity
+      -w /etc/sudoers.d/ -p wa -k identity
+      
+      # Login events
+      -w /var/log/lastlog -p wa -k logins
+      -w /var/run/faillock/ -p wa -k logins
+      
+      # Network configuration
+      -w /etc/network/ -p wa -k network
+      
+      # System time
+      -a always,exit -F arch=b64 -S adjtimex -S settimeofday -k time-change
+      -a always,exit -F arch=b32 -S adjtimex -S settimeofday -S stime -k time-change
+      -w /etc/localtime -p wa -k time-change
+      
+      # User/group changes
+      -w /etc/group -p wa -k identity
+      -w /etc/passwd -p wa -k identity
+      -w /etc/gshadow -p wa -k identity
+      -w /etc/shadow -p wa -k identity
+      -w /etc/security/opasswd -p wa -k identity
+      
+      # Privilege escalation
+      -w /usr/bin/sudo -p x -k priv_esc
+      -w /etc/sudoers -p wa -k priv_esc
+      -w /etc/sudoers.d/ -p wa -k priv_esc
+      
+      # Make rules immutable
+      -e 2
+    create: yes
+  notify: restart auditd
+
+- name: Display auditd configuration summary
+  debug:
+    msg:
+      - "auditd configured and enabled"
+      - "Logging: Authentication, privilege escalation, system changes"
+      - "Rules file: /etc/audit/rules.d/50-ansible-hardening.rules"
