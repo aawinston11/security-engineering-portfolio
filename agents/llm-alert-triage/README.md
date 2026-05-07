@@ -2,7 +2,7 @@
 
 A triage agent that consumes synthetic alerts, enriches them via the [MCP Security Tooling Server](../mcp-security-tooling/), and emits schema-validated triage decisions. Ships with an eval harness scoring accuracy, false-positive rate, schema validity, and per-call cost/latency on a labeled 15-alert dataset.
 
-**Status: WIP — live verification pending.** Schema, backend selection, MCP-tool conversion, and dataset alignment all unit-tested (14/14). Anthropic and OpenAI agent loops are structurally complete; first live `make eval` runs haven't been done from this environment yet (needs `ANTHROPIC_API_KEY` and/or `OPENAI_API_KEY`). Ollama backend is stubbed pending the LLM lab box rebuild.
+**Status: Beta on Anthropic; OpenAI re-verification pending.** First live `make eval` run on Anthropic completed cleanly: 15/15 alerts processed, 100% schema validity, 66.7% verdict accuracy baseline, $0.26 for the run. OpenAI backend ran but only 6/15 alerts succeeded — the remainder hit `404 - Your organization must be verified to use the model gpt-5-mini` while permissions are still propagating post-verification (per OpenAI's documented 15-minute rollout). Re-run pending. Ollama backend is stubbed pending the LLM lab box rebuild. Unit tests: 14/14 pass.
 
 ---
 

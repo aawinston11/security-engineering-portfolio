@@ -19,11 +19,16 @@ eval: siem-up _check_key
 	$(UV) run python -m alert_triage.cli eval
 
 _check_key:
-	@backend=$${LLM_BACKEND:-anthropic}; \
+	@if [ -f ../../.env ]; then set -a; . ../../.env; set +a; fi; \
+	backend=$${LLM_BACKEND:-anthropic}; \
 	if [ "$$backend" = "anthropic" ] && [ -z "$$ANTHROPIC_API_KEY" ]; then \
-		echo "ANTHROPIC_API_KEY is not set (LLM_BACKEND=anthropic)."; exit 1; \
+		echo "ANTHROPIC_API_KEY is not set."; \
+		echo "Add it to .env at the repo root, or export it in your shell."; \
+		exit 1; \
 	elif [ "$$backend" = "openai" ] && [ -z "$$OPENAI_API_KEY" ]; then \
-		echo "OPENAI_API_KEY is not set (LLM_BACKEND=openai)."; exit 1; \
+		echo "OPENAI_API_KEY is not set."; \
+		echo "Add it to .env at the repo root, or export it in your shell."; \
+		exit 1; \
 	fi
 
 test:

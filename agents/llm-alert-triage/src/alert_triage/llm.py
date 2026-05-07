@@ -144,7 +144,15 @@ class AnthropicBackend:
 
             if resp.stop_reason == "tool_use":
                 tool_use_blocks = [b for b in resp.content if b.type == "tool_use"]
-                messages.append({"role": "assistant", "content": resp.content})
+                # Anthropic 400s on `messages: text content blocks must be non-empty`
+                # if we echo back an assistant turn that includes an empty text block.
+                # Adaptive-thinking responses sometimes contain a zero-length text block
+                # alongside thinking/tool_use blocks — drop those before re-sending.
+                clean_assistant_content = [
+                    b for b in resp.content
+                    if not (b.type == "text" and not (getattr(b, "text", "") or "").strip())
+                ]
+                messages.append({"role": "assistant", "content": clean_assistant_content})
 
                 tool_results = []
                 for tu in tool_use_blocks:
