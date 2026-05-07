@@ -14,8 +14,8 @@ Work is **AI-assisted, human-validated**. Sample data is synthetic; nothing here
 
 | Project | Status | One-liner |
 |---|---|---|
-| [MCP Security Tooling Server](agents/mcp-security-tooling/) | WIP | MCP server exposing a synthetic SIEM/EDR API to LLM agents — auth-scoped tools, deterministic responses, audit trail. |
-| [LLM Alert Triage](agents/llm-alert-triage/) | WIP | Triage agent that consumes synthetic alerts, enriches via the MCP server, and emits schema-validated decisions. Eval harness scores accuracy, FP rate, and reasoning quality on a labeled dataset. |
+| [MCP Security Tooling Server](agents/mcp-security-tooling/) | WIP | MCP server exposing a synthetic SIEM/EDR API to LLM agents — auth-scoped tools, deterministic responses, audit trail. One tool live; tested end-to-end (9/9 tests + demo verified). |
+| [LLM Alert Triage](agents/llm-alert-triage/) | Beta (Anthropic) | Triage agent over Anthropic + OpenAI backends; consumes synthetic alerts, enriches via the MCP server, emits schema-validated decisions. Eval harness scores accuracy, FP rate, IoU, latency, and per-call cost on a labeled dataset. Anthropic verified end-to-end (15/15, 100% schema validity, 67% verdict accuracy baseline); OpenAI re-verification pending propagation. |
 | [IR Copilot](agents/ir-copilot/) | WIP | Ingests a synthetic incident-channel transcript and produces a structured IR doc + action items. Prompt-injection guardrails for untrusted input. |
 
 ### Detection & automation
@@ -53,7 +53,7 @@ make eval     # only on projects with an eval harness
 make test     # unit + integration
 ```
 
-Prerequisites for agent projects: `ANTHROPIC_API_KEY`, or set `LLM_BACKEND=ollama` for a local model. Prerequisites for the hardening role: Ansible 2.14+ and an Ubuntu 22.04 target VM.
+Configure API keys once at the repo root: `cp .env.example .env` and fill it in. `.env` is gitignored. Shell exports also work and take precedence. Agent projects need `ANTHROPIC_API_KEY` and/or `OPENAI_API_KEY` (selected via `LLM_BACKEND=anthropic|openai`); `LLM_BACKEND=ollama` is stubbed pending the LLM lab box rebuild. The hardening role needs Ansible 2.14+ and an Ubuntu 22.04 target VM.
 
 ---
 

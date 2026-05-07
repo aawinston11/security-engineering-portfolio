@@ -1,0 +1,20 @@
+services:
+  siem-mock:
+    build:
+      context: .
+      dockerfile: Dockerfile.siem
+    container_name: mcp-sectool-siem-mock
+    ports:
+      - "8765:8000"
+    environment:
+      - SIEM_API_KEY=${SIEM_API_KEY:-dev-readonly-key}
+      - SIEM_DATA_PATH=/app/data/events.jsonl
+      - PYTHONUNBUFFERED=1
+    volumes:
+      - ./data:/app/data:ro
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:8000/health').status == 200 else 1)"]
+      interval: 2s
+      timeout: 1s
+      retries: 5
+      start_period: 1s
