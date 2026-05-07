@@ -1,0 +1,7 @@
+---
+# Handlers for system_updates role
+
+- name: restart unattended-upgrades
+  systemd:
+    name: unattended-upgrades
+    state: restarted

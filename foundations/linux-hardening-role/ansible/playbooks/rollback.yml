@@ -1,0 +1,107 @@
+---
+# Rollback playbook to restore baseline configuration
+# Use with caution - this will remove security hardening
+
+- name: Rollback Linux Hardening
+  hosts: linux_servers
+  become: yes
+  gather_facts: yes
+  
+  vars:
+    ssh_port: "{{ ssh_port | default(22) }}"
+  
+  tasks:
+    - name: Verify rollback is intentional
+      pause:
+        prompt: |
+          WARNING: This will rollback all security hardening!
+          SSH password authentication will be re-enabled.
+          Firewall rules will be reset.
+          fail2ban will be disabled.
+          
+          Type 'yes' to continue, or Ctrl+C to abort
+        echo: yes
+      when: not ansible_check_mode
+    
+    - name: Restore SSH configuration
+      block:
+        - name: Check if SSH backup exists
+          stat:
+            path: /etc/ssh/sshd_config.bak
+          register: ssh_backup
+        
+        - name: Restore SSH configuration from backup
+          copy:
+            src: /etc/ssh/sshd_config.bak
+            dest: /etc/ssh/sshd_config
+            remote_src: yes
+          when: ssh_backup.stat.exists
+        
+        - name: Restart SSH service
+          systemd:
+            name: sshd
+            state: restarted
+          when: ssh_backup.stat.exists
+    
+    - name: Reset firewall to default
+      block:
+        - name: Reset UFW to defaults
+          ufw:
+            state: reset
+            force_unsupported: yes
+        
+        - name: Set UFW default policies
+          ufw:
+            rule: allow
+            direction: "{{ item }}"
+          loop:
+            - in
+            - out
+        
+        - name: Enable UFW
+          ufw:
+            state: enabled
+    
+    - name: Stop and disable fail2ban
+      block:
+        - name: Stop fail2ban
+          systemd:
+            name: fail2ban
+            state: stopped
+            enabled: no
+        
+        - name: Unban all IPs
+          command: fail2ban-client unban --all
+          ignore_errors: yes
+          when: ansible_check_mode | bool == false
+    
+    - name: Stop and disable auditd (optional)
+      block:
+        - name: Stop auditd
+          systemd:
+            name: auditd
+            state: stopped
+            enabled: no
+      when: rollback_auditd | default(false) | bool
+    
+    - name: Restore PAM configuration
+      block:
+        - name: Restore PAM files from backup
+          copy:
+            src: "{{ item }}.bak"
+            dest: "{{ item }}"
+            remote_src: yes
+          loop:
+            - /etc/pam.d/common-password
+            - /etc/pam.d/common-auth
+          ignore_errors: yes
+    
+    - name: Display rollback summary
+      debug:
+        msg:
+          - "Rollback completed"
+          - "SSH: Configuration restored from backup"
+          - "Firewall: Reset to default (allow all)"
+          - "fail2ban: Disabled"
+          - "WARNING: System is now less secure!"
+          - "Re-run harden.yml to re-apply hardening"

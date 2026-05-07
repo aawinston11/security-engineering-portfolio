@@ -1,0 +1,2 @@
+# This file ensures the post directory is tracked in git
+# Evidence files will be generated during post-hardening validation

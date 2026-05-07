@@ -1,0 +1,53 @@
+---
+# System Updates and Patching Role
+
+- name: Update apt cache
+  apt:
+    update_cache: yes
+    cache_valid_time: 3600
+
+- name: Install security updates
+  apt:
+    upgrade: dist
+    autoremove: yes
+    autoclean: yes
+  register: apt_upgrade_result
+
+- name: Install unattended-upgrades
+  apt:
+    name: unattended-upgrades
+    state: present
+
+- name: Configure automatic security updates
+  template:
+    src: 50unattended-upgrades.j2
+    dest: /etc/apt/apt.conf.d/50unattended-upgrades
+    owner: root
+    group: root
+    mode: '0644'
+  notify: restart unattended-upgrades
+
+- name: Enable automatic updates
+  lineinfile:
+    path: /etc/apt/apt.conf.d/20auto-upgrades
+    regexp: '^APT::Periodic::Update-Package-Lists'
+    line: 'APT::Periodic::Update-Package-Lists "1";'
+    create: yes
+
+- name: Enable automatic upgrade
+  lineinfile:
+    path: /etc/apt/apt.conf.d/20auto-upgrades
+    regexp: '^APT::Periodic::Unattended-Upgrade'
+    line: 'APT::Periodic::Unattended-Upgrade "1";'
+    create: yes
+
+- name: Configure update check interval
+  lineinfile:
+    path: /etc/apt/apt.conf.d/20auto-upgrades
+    regexp: '^APT::Periodic::Download-Upgradeable-Packages'
+    line: 'APT::Periodic::Download-Upgradeable-Packages "1";'
+    create: yes
+
+- name: Display update results
+  debug:
+    msg: "Security updates applied: {{ apt_upgrade_result.changed | default(false) }}"

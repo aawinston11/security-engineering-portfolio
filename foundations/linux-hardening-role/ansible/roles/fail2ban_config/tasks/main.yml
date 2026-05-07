@@ -1,0 +1,51 @@
+---
+# fail2ban Configuration Role
+
+- name: Install fail2ban
+  apt:
+    name: fail2ban
+    state: present
+
+- name: Enable and start fail2ban
+  systemd:
+    name: fail2ban
+    enabled: yes
+    state: started
+
+- name: Configure fail2ban main settings
+  lineinfile:
+    path: /etc/fail2ban/jail.conf
+    regexp: "^{{ item.regexp }}"
+    line: "{{ item.line }}"
+    backup: yes
+  loop:
+    - { regexp: '^bantime', line: 'bantime = {{ fail2ban_ban_time }}' }
+    - { regexp: '^findtime', line: 'findtime = {{ fail2ban_findtime }}' }
+    - { regexp: '^maxretry', line: 'maxretry = {{ fail2ban_maxretry }}' }
+  notify: restart fail2ban
+
+- name: Configure SSH jail
+  blockinfile:
+    path: /etc/fail2ban/jail.local
+    marker: "# {mark} ANSIBLE MANAGED BLOCK - SSH Jail"
+    block: |
+      [sshd]
+      enabled = true
+      port = {{ ssh_port }}
+      filter = sshd
+      logpath = /var/log/auth.log
+      maxretry = {{ fail2ban_maxretry }}
+      bantime = {{ fail2ban_ban_time }}
+      findtime = {{ fail2ban_findtime }}
+      backend = systemd
+    create: yes
+  notify: restart fail2ban
+
+- name: Display fail2ban configuration summary
+  debug:
+    msg:
+      - "fail2ban configured and enabled"
+      - "SSH jail: Active"
+      - "Ban time: {{ fail2ban_ban_time }} seconds"
+      - "Max retries: {{ fail2ban_maxretry }}"
+      - "Find time: {{ fail2ban_findtime }} seconds"

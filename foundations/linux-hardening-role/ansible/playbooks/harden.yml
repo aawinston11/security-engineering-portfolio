@@ -1,0 +1,78 @@
+---
+# Main hardening playbook for Ubuntu 22.04 LTS
+# This playbook applies CIS/NIST-aligned security hardening
+
+- name: Linux Hardening - Ubuntu 22.04 LTS
+  hosts: linux_servers
+  become: yes
+  gather_facts: yes
+  
+  vars:
+    # SSH Configuration
+    ssh_port: "{{ ssh_port | default(22) }}"
+    ssh_allowed_users: "{{ ssh_allowed_users | default(ansible_user) }}"
+    
+    # fail2ban Configuration
+    fail2ban_ban_time: "{{ fail2ban_ban_time | default(3600) }}"
+    fail2ban_findtime: "{{ fail2ban_findtime | default(600) }}"
+    fail2ban_maxretry: "{{ fail2ban_maxretry | default(3) }}"
+    
+    # Firewall Configuration
+    allowed_ports:
+      - port: "{{ ssh_port }}"
+        protocol: tcp
+        comment: "SSH access"
+    
+    # Audit Configuration
+    auditd_max_log_file: 50
+    auditd_num_logs: 5
+    
+  pre_tasks:
+    - name: Backup critical configurations
+      block:
+        - name: Backup SSH configuration
+          copy:
+            src: /etc/ssh/sshd_config
+            dest: /etc/ssh/sshd_config.bak
+            remote_src: yes
+          when: ansible_check_mode | bool == false
+        
+        - name: Backup PAM configuration
+          copy:
+            src: "{{ item }}"
+            dest: "{{ item }}.bak"
+            remote_src: yes
+          loop:
+            - /etc/pam.d/common-password
+            - /etc/pam.d/common-auth
+          when: ansible_check_mode | bool == false
+          ignore_errors: yes
+
+  roles:
+    - role: system_updates
+    - role: ssh_hardening
+    - role: firewall
+    - role: pam_config
+    - role: auditd_config
+    - role: fail2ban_config
+    - role: system_hardening
+
+  post_tasks:
+    - name: Display hardening summary
+      debug:
+        msg:
+          - "Hardening completed successfully"
+          - "SSH: Password auth disabled, key-based only"
+          - "Firewall: UFW enabled with allowlist"
+          - "fail2ban: Active and monitoring SSH"
+          - "auditd: Active and logging"
+          - "System: Security updates configured"
+      
+    - name: Reminder about validation
+      debug:
+        msg:
+          - "Next steps:"
+          - "1. Run validation scripts: ../scripts/post-hardening-validation.sh"
+          - "2. Run Lynis scan: lynis audit system"
+          - "3. Verify SSH access still works"
+          - "4. Check evidence/ directory for results"

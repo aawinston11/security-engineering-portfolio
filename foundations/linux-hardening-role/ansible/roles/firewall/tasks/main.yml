@@ -1,0 +1,55 @@
+---
+# Firewall Configuration Role
+
+- name: Install UFW
+  apt:
+    name: ufw
+    state: present
+
+- name: Reset UFW to defaults (idempotent)
+  ufw:
+    state: reset
+    force_unsupported: yes
+  when: reset_ufw | default(false) | bool
+
+- name: Set UFW default policies
+  ufw:
+    rule: "{{ item.rule }}"
+    direction: "{{ item.direction }}"
+  loop:
+    - { rule: deny, direction: incoming }
+    - { rule: allow, direction: outgoing }
+    - { rule: deny, direction: routed }
+
+- name: Allow SSH port
+  ufw:
+    rule: allow
+    port: "{{ ssh_port }}"
+    proto: tcp
+    comment: "SSH access"
+
+- name: Allow additional ports
+  ufw:
+    rule: allow
+    port: "{{ item.port }}"
+    proto: "{{ item.protocol | default('tcp') }}"
+    comment: "{{ item.comment | default('') }}"
+  loop: "{{ allowed_ports | default([]) }}"
+  when: item.port != ssh_port
+
+- name: Enable UFW logging
+  ufw:
+    logging: on
+
+- name: Enable UFW
+  ufw:
+    state: enabled
+
+- name: Display firewall status
+  command: ufw status verbose
+  register: ufw_status
+  changed_when: false
+
+- name: Show firewall status
+  debug:
+    var: ufw_status.stdout_lines

@@ -1,0 +1,7 @@
+---
+# Handlers for fail2ban_config role
+
+- name: restart fail2ban
+  systemd:
+    name: fail2ban
+    state: restarted

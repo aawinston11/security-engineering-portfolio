@@ -1,0 +1,30 @@
+.DS_Store
+.claude/
+.env
+.env.local
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+*.swp
+*~
+
+# Python tooling
+.ruff_cache/
+.mypy_cache/
+.pytest_cache/
+htmlcov/
+.coverage
+.tox/
+
+# Evidence (may contain sensitive output even when scrubbed)
+**/evidence/baseline/*.txt
+**/evidence/post/*.txt
+!**/evidence/**/.gitkeep
+
+# Editor
+.idea/
+.vscode/
+
+# OS
+Thumbs.db

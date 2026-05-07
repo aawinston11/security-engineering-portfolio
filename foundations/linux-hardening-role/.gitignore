@@ -1,0 +1,31 @@
+# Evidence files (may contain sensitive information)
+evidence/baseline/*.txt
+evidence/post/*.txt
+!evidence/baseline/.gitkeep
+!evidence/post/.gitkeep
+
+# Ansible
+ansible/*.retry
+ansible/.vault_pass
+ansible/facts_cache/
+
+# Temporary files
+*.tmp
+*.bak
+*.swp
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# Certificates (if stored)
+*.pem
+*.crt
+*.key
+!ansible/roles/**/*.pem.example
