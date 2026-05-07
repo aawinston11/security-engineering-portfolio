@@ -53,7 +53,7 @@ make eval     # only on projects with an eval harness
 make test     # unit + integration
 ```
 
-Prerequisites for agent projects: `ANTHROPIC_API_KEY` and/or `OPENAI_API_KEY` (selected via `LLM_BACKEND=anthropic|openai`); `LLM_BACKEND=ollama` is stubbed pending the LLM lab box rebuild. Prerequisites for the hardening role: Ansible 2.14+ and an Ubuntu 22.04 target VM.
+Configure API keys once at the repo root: `cp .env.example .env` and fill it in. `.env` is gitignored. Shell exports also work and take precedence. Agent projects need `ANTHROPIC_API_KEY` and/or `OPENAI_API_KEY` (selected via `LLM_BACKEND=anthropic|openai`); `LLM_BACKEND=ollama` is stubbed pending the LLM lab box rebuild. The hardening role needs Ansible 2.14+ and an Ubuntu 22.04 target VM.
 
 ---
 

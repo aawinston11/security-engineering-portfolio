@@ -46,15 +46,18 @@ LLM-based alert triage is easy to demo and hard to trust. The interesting questi
 ```bash
 make setup                                                 # uv sync (Python 3.11+)
 
+# Configure keys: copy .env.example to .env at the repo root, fill in your keys.
+# (Shell exports also work and take precedence over .env.)
+cp ../../.env.example ../../.env
+$EDITOR ../../.env
+
 # Anthropic (default)
-export ANTHROPIC_API_KEY=...
 make eval                                                  # 15 alerts, ~$0.05-0.15 with cache hits
 
 # OpenAI
-export OPENAI_API_KEY=...
 LLM_BACKEND=openai make eval                               # same dataset, same scoring
 
-# Specific model override
+# Specific model override (env var or .env)
 ANTHROPIC_MODEL=claude-opus-4-7 make eval
 LLM_BACKEND=openai OPENAI_MODEL=gpt-5 make eval
 
@@ -68,7 +71,7 @@ make test
 
 `make siem-up` brings up the SIEM mock from the sibling MCP project; `run` and `eval` invoke it as a prereq.
 
-Prerequisites: Python 3.11+, [`uv`](https://docs.astral.sh/uv/), Docker, plus `ANTHROPIC_API_KEY` or `OPENAI_API_KEY` depending on which backend you select.
+Prerequisites: Python 3.11+, [`uv`](https://docs.astral.sh/uv/), Docker, plus `ANTHROPIC_API_KEY` or `OPENAI_API_KEY` depending on which backend you select. Keys are picked up from a repo-root `.env` file (gitignored; copy `.env.example` to start) or from your shell environment.
 
 ### Backend selection summary
 

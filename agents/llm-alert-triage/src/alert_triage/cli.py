@@ -6,11 +6,19 @@ import json
 import sys
 from pathlib import Path
 
-from .agent import triage_alert
-from .eval import run_eval
-from .llm import get_backend
-from .mcp_client import mcp_session
-from .schema import Alert
+from dotenv import load_dotenv
+
+# Load env vars from a .env file. find_dotenv (called by load_dotenv() with no args)
+# walks up from cwd, so the same .env at the repo root works whether you run from
+# the project dir or anywhere underneath. Existing shell exports take precedence
+# (override=False by default).
+load_dotenv()
+
+from .agent import triage_alert  # noqa: E402  — env must be loaded before backend selection
+from .eval import run_eval  # noqa: E402
+from .llm import get_backend  # noqa: E402
+from .mcp_client import mcp_session  # noqa: E402
+from .schema import Alert  # noqa: E402
 
 DATA_DIR = Path(__file__).resolve().parents[2] / "data"
 
