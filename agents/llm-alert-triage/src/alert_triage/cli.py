@@ -52,11 +52,13 @@ async def _run_one(alert_id: str | None = None) -> None:
         if result.raw_text:
             print(f"  raw text: {result.raw_text[:500]}")
 
+    u = result.usage
     print(
         f"\n  ({result.tool_calls} tool calls, {result.turns} turns, "
         f"{result.latency_seconds:.2f}s, "
-        f"in={result.input_tokens} out={result.output_tokens} "
-        f"cache_r={result.cache_read_input_tokens} cache_w={result.cache_creation_input_tokens})"
+        f"in={u.input_tokens} out={u.output_tokens} "
+        f"cached={u.cached_tokens} reasoning={u.reasoning_tokens} "
+        f"cache_w={u.cache_creation_tokens})"
     )
 
 

@@ -6,10 +6,10 @@ Metrics:
 - MITRE technique IoU (intersection over union of T-codes)
 - schema validation rate (Pydantic parsed cleanly)
 - false-positive rate: predicted true_positive when truth is benign / false_positive
-- per-alert latency, total cost (Anthropic backend only)
+- per-alert latency, total cost (best-effort, per-backend rates)
 
-Cost is computed from `usage` per-call. Sonnet 4.6 baseline: $3/M input, $15/M
-output, ~$0.30/M for cache reads, ~$3.75/M for cache writes (1.25x input).
+OpenAI prices below are estimates — verify against https://openai.com/api/pricing
+for your tier. Anthropic prices are accurate as of the claude-api skill cache.
 """
 from __future__ import annotations
 
@@ -19,20 +19,25 @@ from dataclasses import asdict, dataclass, field
 from pathlib import Path
 
 from .agent import TriageResult, triage_alert
-from .llm import LLMBackend, get_backend
+from .llm import Usage, get_backend
 from .mcp_client import mcp_session
 from .schema import Alert, GroundTruth
 
 DATA_DIR = Path(__file__).resolve().parents[2] / "data"
 RESULTS_DIR = Path(__file__).resolve().parents[2] / "eval-results"
 
-# Per-million-token rates for Anthropic models we actually use here.
-# Cache-read ~ 0.1x input; cache-write ~ 1.25x input (5-min TTL).
-ANTHROPIC_PRICE_PER_M = {
-    "claude-sonnet-4-6": {"input": 3.00, "output": 15.00},
-    "claude-opus-4-7": {"input": 5.00, "output": 25.00},
-    "claude-opus-4-6": {"input": 5.00, "output": 25.00},
-    "claude-haiku-4-5": {"input": 1.00, "output": 5.00},
+# Per-million-token rates by (backend, model).
+# Anthropic: cache-read ~ 0.10x input; cache-write ~ 1.25x input (5-min TTL).
+# OpenAI: cached prompt tokens ~ 0.50x input; reasoning tokens billed at output rate.
+PRICE_PER_M: dict[tuple[str, str], dict[str, float]] = {
+    ("anthropic", "claude-sonnet-4-6"): {"input": 3.00, "output": 15.00},
+    ("anthropic", "claude-opus-4-7"): {"input": 5.00, "output": 25.00},
+    ("anthropic", "claude-opus-4-6"): {"input": 5.00, "output": 25.00},
+    ("anthropic", "claude-haiku-4-5"): {"input": 1.00, "output": 5.00},
+    # OpenAI rates are approximate — verify against OpenAI's current pricing.
+    ("openai", "gpt-5"): {"input": 1.25, "output": 10.00},
+    ("openai", "gpt-5-mini"): {"input": 0.25, "output": 2.00},
+    ("openai", "gpt-5-nano"): {"input": 0.05, "output": 0.40},
 }
 
 
@@ -52,6 +57,10 @@ class ScoredResult:
     latency_seconds: float = 0.0
     tool_calls: int = 0
     cost_usd: float = 0.0
+    input_tokens: int = 0
+    output_tokens: int = 0
+    cached_tokens: int = 0
+    reasoning_tokens: int = 0
     error: str | None = None
 
 
@@ -69,18 +78,18 @@ def _iou(a: list[str], b: list[str]) -> float:
     return len(sa & sb) / len(union)
 
 
-def _cost_usd(result: TriageResult, model: str) -> float:
-    rates = ANTHROPIC_PRICE_PER_M.get(model)
+def _cost_usd(usage: Usage, backend: str, model: str) -> float:
+    rates = PRICE_PER_M.get((backend, model))
     if not rates:
         return 0.0
     in_rate = rates["input"]
     out_rate = rates["output"]
-    # Standard input + output, plus cache-tier adjustments.
+    cached_factor = 0.50 if backend == "openai" else 0.10
     cost = (
-        result.input_tokens * in_rate
-        + result.output_tokens * out_rate
-        + result.cache_read_input_tokens * (in_rate * 0.10)
-        + result.cache_creation_input_tokens * (in_rate * 1.25)
+        usage.input_tokens * in_rate
+        + usage.output_tokens * out_rate
+        + usage.cached_tokens * (in_rate * cached_factor)
+        + usage.cache_creation_tokens * (in_rate * 1.25)
     ) / 1_000_000
     return round(cost, 6)
 
@@ -89,6 +98,7 @@ def _score_one(
     alert: Alert,
     truth: GroundTruth,
     result: TriageResult,
+    backend: str,
     model: str,
 ) -> ScoredResult:
     decision = result.decision
@@ -106,7 +116,11 @@ def _score_one(
         schema_valid=result.schema_valid,
         latency_seconds=round(result.latency_seconds, 2),
         tool_calls=result.tool_calls,
-        cost_usd=_cost_usd(result, model),
+        cost_usd=_cost_usd(result.usage, backend, model),
+        input_tokens=result.usage.input_tokens,
+        output_tokens=result.usage.output_tokens,
+        cached_tokens=result.usage.cached_tokens,
+        reasoning_tokens=result.usage.reasoning_tokens,
         error=result.error,
     )
 
@@ -134,7 +148,7 @@ async def run_eval() -> dict:
 
             print(f"[{i}/{len(alerts)}] {alert.alert_id} ({alert.name})")
             result = await triage_alert(alert, llm=llm, session=session)
-            row = _score_one(alert, truth, result, llm.model)
+            row = _score_one(alert, truth, result, llm.name, llm.model)
             scored.append(row)
 
             verdict_str = row.predicted_verdict or "ERROR"
@@ -208,4 +222,5 @@ def _save_results(rows: list[ScoredResult], summary: dict) -> None:
     payload = {"summary": summary, "rows": [asdict(r) for r in rows]}
     out = RESULTS_DIR / f"eval-{stamp}.json"
     out.write_text(json.dumps(payload, indent=2))
-    print(f"\nWrote {out.relative_to(Path.cwd()) if out.is_relative_to(Path.cwd()) else out}")
+    rel = out.relative_to(Path.cwd()) if out.is_relative_to(Path.cwd()) else out
+    print(f"\nWrote {rel}")
