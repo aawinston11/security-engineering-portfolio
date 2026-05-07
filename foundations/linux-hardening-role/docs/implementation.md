@@ -1,6 +1,6 @@
 # Implementation Guide
 
-This guide provides step-by-step instructions for implementing Phase 1 Linux Hardening.
+This guide is the deeper-dive companion to the role README — step-by-step commands, expected outputs, and troubleshooting for running the Linux hardening role end-to-end.
 
 ## Prerequisites
 
@@ -41,7 +41,7 @@ This guide provides step-by-step instructions for implementing Phase 1 Linux Har
 
 ### Run Baseline Script
 ```bash
-cd 01-linux-hardening
+# From the role root (foundations/linux-hardening-role):
 ./scripts/baseline-assessment.sh <target-host>
 ```
 
@@ -85,7 +85,7 @@ all:
     linux_servers:
       hosts:
         ubuntu-server-01:
-          ansible_host: 192.168.1.10
+          ansible_host: 203.0.113.10  # RFC 5737 docs range — replace with your target.
           ansible_user: ubuntu
           ansible_ssh_private_key_file: ~/.ssh/id_ed25519
 ```
@@ -144,7 +144,7 @@ ssh -i ~/.ssh/id_ed25519 user@target-host
 
 ### Run Validation Script
 ```bash
-cd 01-linux-hardening
+# From the role root (foundations/linux-hardening-role):
 ./scripts/post-hardening-validation.sh <target-host>
 ```
 
@@ -301,7 +301,7 @@ After successful hardening:
    - fail2ban alerts
    - auditd log volume
    - Certificate expiration
-5. **Plan for Phase 2** (Windows Hardening)
+5. **Iterate** the role as new CIS/Lynis findings surface in baseline scans.
 
 ## Best Practices
 

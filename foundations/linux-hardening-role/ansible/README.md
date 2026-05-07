@@ -34,7 +34,7 @@ all:
     linux_servers:
       hosts:
         ubuntu-server-01:
-          ansible_host: 192.168.1.10
+          ansible_host: 203.0.113.10  # RFC 5737 docs range — replace with your target.
           ansible_user: ubuntu
           ansible_ssh_private_key_file: ~/.ssh/id_ed25519
 ```
