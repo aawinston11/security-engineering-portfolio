@@ -1,0 +1,3 @@
+{"EventID":5140,"ShareName":"\\\\*\\ADMIN$","SourceAddress":"198.51.100.42","User":"FINANCE\\jsmith","_atomic_test_id":"T1021.002#admin_share_remote"}
+{"EventID":5140,"ShareName":"\\\\*\\C$","SourceAddress":"203.0.113.10","User":"DEV\\tjohnson","_atomic_test_id":"T1021.002#cdollar_share_remote"}
+{"EventID":5140,"ShareName":"\\\\*\\IPC$","SourceAddress":"198.51.100.7","User":"DC01\\administrator","_atomic_test_id":"T1021.002#ipc_share_remote"}

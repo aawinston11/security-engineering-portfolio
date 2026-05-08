@@ -15,14 +15,14 @@ Work is **AI-assisted, human-validated**. Sample data is synthetic; nothing here
 | Project | Status | One-liner |
 |---|---|---|
 | [MCP Security Tooling Server](agents/mcp-security-tooling/) | WIP | MCP server exposing a synthetic SIEM/EDR API to LLM agents — auth-scoped tools, deterministic responses, audit trail. One tool live; tested end-to-end (9/9 tests + demo verified). |
-| [LLM Alert Triage](agents/llm-alert-triage/) | Beta (Anthropic) | Triage agent over Anthropic + OpenAI backends; consumes synthetic alerts, enriches via the MCP server, emits schema-validated decisions. Eval harness scores accuracy, FP rate, IoU, latency, and per-call cost on a labeled dataset. Anthropic verified end-to-end (15/15, 100% schema validity, 67% verdict accuracy baseline); OpenAI re-verification pending propagation. |
-| [IR Copilot](agents/ir-copilot/) | WIP | Ingests a synthetic incident-channel transcript and produces a structured IR doc + action items. Prompt-injection guardrails for untrusted input. |
+| [LLM Alert Triage](agents/llm-alert-triage/) | Beta | Triage agent over Anthropic + OpenAI backends; consumes synthetic alerts, enriches via the MCP server, emits schema-validated decisions. Eval harness scores accuracy, FP rate, IoU, latency, and per-call cost on a labeled dataset. Both backends live-verified, 100% schema validity. Untuned baselines: Anthropic 67% verdict accuracy / $0.26; OpenAI 53% / $0.06. Comparison table in the project README. |
+| [IR Copilot](agents/ir-copilot/) | Beta | Ingests a synthetic incident-channel transcript and produces a structured IR doc. Three-layer prompt-injection defense (data-not-instructions framing + schema-constrained output + injection acknowledgement). Live-verified on Anthropic + OpenAI: **6/6 red-team cases passed on both backends** (status-flip, prompt-leak, destructive-action injection). 100% status accuracy on the happy path. Comparison table in the project README. |
 
 ### Detection & automation
 
 | Project | Status | One-liner |
 |---|---|---|
-| [Detection-as-Code](detection/detection-as-code/) | WIP | Sigma + Splunk SPL rules under CI with MITRE ATT&CK mapping, plus a purple-team runner that fires Atomic Red Team techniques and asserts the corresponding detection triggers. |
+| [Detection-as-Code](detection/detection-as-code/) | Beta | 5 Sigma rules across 5 ATT&CK tactics, each with positive (Atomic Red Team-shaped) and negative log fixtures. In-process Sigma evaluator + purple-team runner asserts every rule fires on its positives and stays silent on its negatives. **15/15 positives matched, 0/14 negatives incorrectly matched.** Lint, ATT&CK mapping validation, Navigator JSON export, sigma-cli SPL conversion, 21/21 unit tests. |
 
 ### Foundations
 

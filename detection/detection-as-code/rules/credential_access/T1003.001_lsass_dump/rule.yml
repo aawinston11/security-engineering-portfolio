@@ -1,0 +1,33 @@
+title: LSASS Credential Dumping via Known Tooling
+id: 8a3f6c1e-1003-4001-aaaa-lsassdump01
+status: experimental
+description: |
+  Detects execution of known credential-dumping tooling (mimikatz, procdump targeting lsass)
+  whose intent is to extract credentials from LSASS memory.
+references:
+  - https://attack.mitre.org/techniques/T1003/001/
+  - https://github.com/gentilkiwi/mimikatz
+author: synthetic-portfolio
+date: 2026/04/22
+tags:
+  - attack.credential_access
+  - attack.t1003.001
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection_mimikatz:
+    Image|endswith: '\mimikatz.exe'
+  selection_procdump_lsass:
+    Image|endswith: '\procdump.exe'
+    CommandLine|contains: 'lsass'
+  selection_sekurlsa:
+    CommandLine|contains:
+      - 'sekurlsa::logonpasswords'
+      - 'sekurlsa::tickets'
+      - 'lsadump::sam'
+  condition: 1 of selection_*
+falsepositives:
+  - Authorized red-team / pentest exercises. Should be coordinated with security; uncoordinated
+    runs always require investigation.
+level: critical

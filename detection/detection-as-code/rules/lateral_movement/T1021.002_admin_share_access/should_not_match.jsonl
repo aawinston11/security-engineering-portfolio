@@ -1,0 +1,3 @@
+{"EventID":5140,"ShareName":"\\\\*\\ADMIN$","SourceAddress":"127.0.0.1","User":"FINANCE\\jsmith","_note":"local share access — filter_local exempts loopback"}
+{"EventID":5140,"ShareName":"\\\\*\\Users","SourceAddress":"198.51.100.42","User":"FINANCE\\jsmith","_note":"non-administrative share (Users) — should not match"}
+{"EventID":4624,"ShareName":"","SourceAddress":"198.51.100.42","User":"FINANCE\\jsmith","_note":"wrong EventID — logon event, not file access"}

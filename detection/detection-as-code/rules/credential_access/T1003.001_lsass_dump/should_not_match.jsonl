@@ -1,0 +1,2 @@
+{"Image":"C:\\tools\\procdump.exe","CommandLine":"procdump.exe -ma chrome.exe","User":"finance03\\jsmith","ParentImage":"explorer.exe","_note":"procdump used on a non-lsass process"}
+{"Image":"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe","CommandLine":"powershell.exe Get-Process lsass","User":"dc01\\administrator","ParentImage":"explorer.exe","_note":"Get-Process referencing lsass — no dumping tooling"}

