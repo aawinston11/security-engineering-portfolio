@@ -1,0 +1,92 @@
+name: ci
+
+on:
+  push:
+    branches: [main, restructure-pillars]
+  pull_request:
+    branches: [main]
+
+# All four jobs are pure unit tests — no LLM calls (would cost money on every push)
+# and no live SIEM (only the MCP server job spins up Docker compose). The eval
+# and red-team harnesses still exist; they're just gated behind explicit local runs
+# so CI doesn't burn API budget on every commit.
+
+jobs:
+  detection-as-code:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: detection/detection-as-code
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v3
+        with:
+          python-version: "3.11"
+      - run: uv sync --extra dev
+      - name: Lint corpus
+        run: uv run python -m detection_as_code.cli lint
+      - name: Validate ATT&CK mappings
+        run: uv run python -m detection_as_code.cli validate-attack-mappings
+      - name: Purple-team
+        run: uv run python -m detection_as_code.cli purple-team
+      - name: Unit tests
+        run: uv run pytest -v
+
+  mcp-security-tooling:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: agents/mcp-security-tooling
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v3
+        with:
+          python-version: "3.11"
+      - run: uv sync --extra dev
+      - name: Start SIEM mock
+        run: docker compose up -d --build siem-mock
+      - name: Wait for SIEM mock
+        run: |
+          for i in $(seq 1 30); do
+            if curl -sf http://localhost:8765/health > /dev/null; then
+              echo "SIEM up after ${i}s"
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "SIEM mock did not come up; logs follow:"
+          docker compose logs siem-mock
+          exit 1
+      - name: Unit tests
+        run: uv run pytest -v
+      - name: Tear down
+        if: always()
+        run: docker compose down
+
+  llm-alert-triage:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: agents/llm-alert-triage
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v3
+        with:
+          python-version: "3.11"
+      - run: uv sync --extra dev
+      - name: Unit tests
+        run: uv run pytest -v
+
+  ir-copilot:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: agents/ir-copilot
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v3
+        with:
+          python-version: "3.11"
+      - run: uv sync --extra dev
+      - name: Unit tests
+        run: uv run pytest -v
