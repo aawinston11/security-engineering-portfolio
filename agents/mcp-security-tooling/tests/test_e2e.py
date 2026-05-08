@@ -1,4 +1,5 @@
-"""End-to-end tests: SIEM mock direct, plus audit-log integrity."""
+"""End-to-end tests: SIEM mock direct (events / alerts / hosts / indicators),
+plus audit-log integrity."""
 from __future__ import annotations
 
 import json
@@ -9,7 +10,7 @@ import httpx
 from mcp_security_tooling.audit import AuditLog
 
 
-# ---------- SIEM mock (HTTP layer) ----------
+# ---------- /health ----------
 
 def test_siem_health(siem_url: str) -> None:
     r = httpx.get(f"{siem_url}/health")
@@ -17,7 +18,12 @@ def test_siem_health(siem_url: str) -> None:
     body = r.json()
     assert body["status"] == "ok"
     assert int(body["events_loaded"]) >= 1
+    assert int(body["alerts_loaded"]) >= 1
+    assert int(body["hosts_loaded"]) >= 1
+    assert int(body["indicators_loaded"]) >= 1
 
+
+# ---------- /events/search ----------
 
 def test_siem_search_requires_auth(siem_url: str) -> None:
     r = httpx.get(f"{siem_url}/events/search")
@@ -25,10 +31,7 @@ def test_siem_search_requires_auth(siem_url: str) -> None:
 
 
 def test_siem_search_rejects_bad_key(siem_url: str) -> None:
-    r = httpx.get(
-        f"{siem_url}/events/search",
-        headers={"X-API-Key": "wrong"},
-    )
+    r = httpx.get(f"{siem_url}/events/search", headers={"X-API-Key": "wrong"})
     assert r.status_code == 401
 
 
@@ -58,7 +61,7 @@ def test_siem_search_filters_correctly(siem_url: str, siem_key: str) -> None:
 
 
 def test_siem_search_is_deterministic(siem_url: str, siem_key: str) -> None:
-    """Same query twice returns identical results (eval reproducibility)."""
+    """Same query twice returns identical results — eval reproducibility."""
     params = {"query": "host=finance03", "limit": 50}
     headers = {"X-API-Key": siem_key}
     r1 = httpx.get(f"{siem_url}/events/search", params=params, headers=headers).json()
@@ -66,7 +69,99 @@ def test_siem_search_is_deterministic(siem_url: str, siem_key: str) -> None:
     assert r1 == r2
 
 
-# ---------- Audit log (HMAC chain) ----------
+# ---------- /alerts/* ----------
+
+def test_alerts_search_returns_alerts(siem_url: str, siem_key: str) -> None:
+    r = httpx.get(
+        f"{siem_url}/alerts/search",
+        params={"query": "host=finance03"},
+        headers={"X-API-Key": siem_key},
+    )
+    assert r.status_code == 200
+    body = r.json()
+    assert body["matched"] >= 1
+    for a in body["alerts"]:
+        assert a["host"] == "finance03"
+
+
+def test_alerts_search_requires_auth(siem_url: str) -> None:
+    r = httpx.get(f"{siem_url}/alerts/search")
+    assert r.status_code == 401
+
+
+def test_get_alert_known(siem_url: str, siem_key: str) -> None:
+    r = httpx.get(
+        f"{siem_url}/alerts/HIST-002",
+        headers={"X-API-Key": siem_key},
+    )
+    assert r.status_code == 200
+    body = r.json()
+    assert body["alert_id"] == "HIST-002"
+    assert body["host"] == "dc01"
+    assert body["severity"] == "critical"
+
+
+def test_get_alert_unknown_404(siem_url: str, siem_key: str) -> None:
+    r = httpx.get(
+        f"{siem_url}/alerts/HIST-9999-not-real",
+        headers={"X-API-Key": siem_key},
+    )
+    assert r.status_code == 404
+
+
+# ---------- /hosts ----------
+
+def test_list_hosts_critical(siem_url: str, siem_key: str) -> None:
+    r = httpx.get(
+        f"{siem_url}/hosts",
+        params={"query": "criticality=critical"},
+        headers={"X-API-Key": siem_key},
+    )
+    assert r.status_code == 200
+    body = r.json()
+    assert body["matched"] >= 1
+    for h in body["hosts"]:
+        assert h["criticality"] == "critical"
+
+
+def test_list_hosts_requires_auth(siem_url: str) -> None:
+    r = httpx.get(f"{siem_url}/hosts")
+    assert r.status_code == 401
+
+
+# ---------- /indicators ----------
+
+def test_enrich_indicator_known(siem_url: str, siem_key: str) -> None:
+    r = httpx.get(
+        f"{siem_url}/indicators/malicious.example.invalid",
+        headers={"X-API-Key": siem_key},
+    )
+    assert r.status_code == 200
+    body = r.json()
+    assert body["known"] is True
+    assert body["reputation"] == "malicious"
+    assert "c2" in body["tags"]
+
+
+def test_enrich_indicator_unknown(siem_url: str, siem_key: str) -> None:
+    """Unknown indicators must return known=false rather than 404 — absence
+    of TI is informative product behavior, not an error condition."""
+    r = httpx.get(
+        f"{siem_url}/indicators/8.8.8.8",
+        headers={"X-API-Key": siem_key},
+    )
+    assert r.status_code == 200
+    body = r.json()
+    assert body["known"] is False
+    assert body["reputation"] == "unknown"
+
+
+def test_enrich_indicator_requires_auth(siem_url: str) -> None:
+    r = httpx.get(f"{siem_url}/indicators/anything.invalid")
+    assert r.status_code == 401
+
+
+# ---------- audit log ----------
 
 def test_audit_log_writes_and_verifies(tmp_path: Path) -> None:
     log = AuditLog(path=tmp_path / "audit.jsonl", hmac_key=b"test-key")
