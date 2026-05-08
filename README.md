@@ -15,7 +15,7 @@ Work is **AI-assisted, human-validated**. Sample data is synthetic; nothing here
 | Project | Status | One-liner |
 |---|---|---|
 | [MCP Security Tooling Server](agents/mcp-security-tooling/) | WIP | MCP server exposing a synthetic SIEM/EDR API to LLM agents — auth-scoped tools, deterministic responses, audit trail. One tool live; tested end-to-end (9/9 tests + demo verified). |
-| [LLM Alert Triage](agents/llm-alert-triage/) | Beta (Anthropic) | Triage agent over Anthropic + OpenAI backends; consumes synthetic alerts, enriches via the MCP server, emits schema-validated decisions. Eval harness scores accuracy, FP rate, IoU, latency, and per-call cost on a labeled dataset. Anthropic verified end-to-end (15/15, 100% schema validity, 67% verdict accuracy baseline); OpenAI re-verification pending propagation. |
+| [LLM Alert Triage](agents/llm-alert-triage/) | Beta | Triage agent over Anthropic + OpenAI backends; consumes synthetic alerts, enriches via the MCP server, emits schema-validated decisions. Eval harness scores accuracy, FP rate, IoU, latency, and per-call cost on a labeled dataset. Both backends live-verified, 100% schema validity. Untuned baselines: Anthropic 67% verdict accuracy / $0.26; OpenAI 53% / $0.06. Comparison table in the project README. |
 | [IR Copilot](agents/ir-copilot/) | WIP | Ingests a synthetic incident-channel transcript and produces a structured IR doc + action items. Prompt-injection guardrails for untrusted input. |
 
 ### Detection & automation

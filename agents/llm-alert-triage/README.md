@@ -2,7 +2,25 @@
 
 A triage agent that consumes synthetic alerts, enriches them via the [MCP Security Tooling Server](../mcp-security-tooling/), and emits schema-validated triage decisions. Ships with an eval harness scoring accuracy, false-positive rate, schema validity, and per-call cost/latency on a labeled 15-alert dataset.
 
-**Status: Beta on Anthropic; OpenAI re-verification pending.** First live `make eval` run on Anthropic completed cleanly: 15/15 alerts processed, 100% schema validity, 66.7% verdict accuracy baseline, $0.26 for the run. OpenAI backend ran but only 6/15 alerts succeeded — the remainder hit `404 - Your organization must be verified to use the model gpt-5-mini` while permissions are still propagating post-verification (per OpenAI's documented 15-minute rollout). Re-run pending. Ollama backend is stubbed pending the LLM lab box rebuild. Unit tests: 14/14 pass.
+**Status: Beta on Anthropic and OpenAI.** Both backends live-verified end-to-end against the labeled dataset. 100% schema validity on both (15/15 each). Ollama backend is stubbed pending the LLM lab box rebuild. Unit tests: 14/14 pass.
+
+### First-run eval results (untuned baseline)
+
+| Metric | Anthropic — claude-sonnet-4-6 | OpenAI — gpt-5-mini |
+|---|---|---|
+| Verdict accuracy | **66.7%** (10/15) | 53.3% (8/15) |
+| Severity accuracy | 40% | 40% |
+| MITRE technique IoU (avg) | 0.188 | 0.212 |
+| Schema validity | 100% | 100% |
+| Tool calls across 15 alerts | 24 | 64 |
+| Avg latency / alert | 14.1s | 29.3s |
+| Total cost (run) | $0.26 | **$0.06** |
+| False-positives called | 0 | 1 |
+
+Findings (untuned prompt):
+- Anthropic edges OpenAI on verdict accuracy by ~13 points but OpenAI is 4× cheaper and uses 2.7× more tools.
+- Both backends share the same severity over-calibration: 40% exact match, with ~6/15 predicted one step higher than ground truth.
+- Both backends miss the same `needs_investigation` cases (ALERT-007, ALERT-009). That's a *prompt issue*, not a model issue — they both classify ambiguous activity as `true_positive` instead of explicitly flagging the ambiguity. Prompt tuning will benefit both backends.
 
 ---
 
