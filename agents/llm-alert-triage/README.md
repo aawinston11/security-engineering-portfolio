@@ -4,7 +4,9 @@ A triage agent that consumes synthetic alerts, enriches them via the [MCP Securi
 
 **Status: Beta on Anthropic and OpenAI.** Both backends live-verified end-to-end against the labeled dataset. 100% schema validity on both (15/15 each). Ollama backend is stubbed pending the LLM lab box rebuild. Unit tests: 14/14 pass.
 
-### First-run eval results (untuned baseline)
+### Eval results
+
+The shipped prompt is the **untuned baseline** (run 2 below). A tuning iteration was tested and rolled back — see "Prompt-tuning iteration" below for the asymmetric result that motivated the rollback.
 
 | Metric | Anthropic — claude-sonnet-4-6 | OpenAI — gpt-5-mini |
 |---|---|---|
@@ -20,7 +22,25 @@ A triage agent that consumes synthetic alerts, enriches them via the [MCP Securi
 Findings (untuned prompt):
 - Anthropic edges OpenAI on verdict accuracy by ~13 points but OpenAI is 4× cheaper and uses 2.7× more tools.
 - Both backends share the same severity over-calibration: 40% exact match, with ~6/15 predicted one step higher than ground truth.
-- Both backends miss the same `needs_investigation` cases (ALERT-007, ALERT-009). That's a *prompt issue*, not a model issue — they both classify ambiguous activity as `true_positive` instead of explicitly flagging the ambiguity. Prompt tuning will benefit both backends.
+- Both backends miss the same `needs_investigation` cases (ALERT-007, ALERT-009) — they both classify ambiguous activity as `true_positive` instead of flagging the ambiguity.
+
+### Prompt-tuning iteration (tested, rolled back)
+
+The first tuning attempt addressed all three findings: explicit severity-calibration table, an "ambiguity case" list for `needs_investigation`, and a MITRE technique-pruning rule. Re-running both backends against the same dataset produced an **asymmetric result** the eval correctly surfaced:
+
+| Metric | Anthropic Δ | OpenAI Δ |
+|---|---|---|
+| Verdict accuracy | **−27pt** (67% → 40%) | 0 (53% → 53%) |
+| Severity accuracy | +13pt (40% → 53%) | **+20pt** (40% → 60%) |
+| MITRE technique IoU | −0.07 (0.19 → 0.12) | **+0.17** (0.21 → 0.38) |
+| Schema validity | −20pt (100% → 80%) | 0 (100% → 100%) |
+| Total cost | +$0.26 ($0.26 → $0.52) | ≈0 ($0.06 → $0.058) |
+
+OpenAI gpt-5-mini benefitted across the board — severity calibration and MITRE pruning both improved. Anthropic Sonnet 4.6 read the new "use needs_investigation when ambiguous" framing as permission to hedge and started returning `needs_investigation` for cases that should be definitive (ALERT-005 rundll32 from temp; ALERT-014 service account login). Sonnet's verdict accuracy collapsed by 27 points.
+
+Decision: **roll back to the untuned prompt** (above) for the shipped state — it's the cleanest baseline for the default Anthropic backend, and the prompt-tuning experiment is now documented evidence rather than a regression. The asymmetric result is itself the senior-level finding: a single shared prompt that's optimal for both providers may not exist, and provider-specific prompts (or a more carefully hedged shared prompt) are the right next iteration.
+
+The eval harness existing is what made this discoverable. Without it, the tuning would have shipped and Anthropic users would have seen a quiet 27-point regression.
 
 ---
 

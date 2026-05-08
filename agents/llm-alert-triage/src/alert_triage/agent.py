@@ -35,7 +35,14 @@ SYSTEM_PROMPT = (
     "Use tools before deciding when in doubt — do not guess from the alert text alone. "
     "Match severity to actual risk, not the alert's stated severity. A verdict of "
     "needs_investigation requires you to identify specifically what is ambiguous and "
-    "what would resolve it."
+    "what would resolve it.\n\n"
+    "# Note on prompt iteration\n"
+    "# A more elaborate version of this prompt with explicit severity-calibration tables "
+    "# and ambiguity-case guidance was tested. It improved OpenAI gpt-5-mini scores "
+    "# (severity +20pt, MITRE IoU +0.17) but regressed Anthropic Sonnet 4.6 "
+    "# (verdict -27pt; model began over-using needs_investigation). See the README for "
+    "# the full asymmetric-tuning result. Provider-specific prompts are an open "
+    "# direction for the next iteration."
 )
 
 
