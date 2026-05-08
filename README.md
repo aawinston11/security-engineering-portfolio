@@ -22,7 +22,7 @@ Work is **AI-assisted, human-validated**. Sample data is synthetic; nothing here
 
 | Project | Status | One-liner |
 |---|---|---|
-| [Detection-as-Code](detection/detection-as-code/) | WIP | Sigma + Splunk SPL rules under CI with MITRE ATT&CK mapping, plus a purple-team runner that fires Atomic Red Team techniques and asserts the corresponding detection triggers. |
+| [Detection-as-Code](detection/detection-as-code/) | Beta | 5 Sigma rules across 5 ATT&CK tactics, each with positive (Atomic Red Team-shaped) and negative log fixtures. In-process Sigma evaluator + purple-team runner asserts every rule fires on its positives and stays silent on its negatives. **15/15 positives matched, 0/14 negatives incorrectly matched.** Lint, ATT&CK mapping validation, Navigator JSON export, sigma-cli SPL conversion, 21/21 unit tests. |
 
 ### Foundations
 
