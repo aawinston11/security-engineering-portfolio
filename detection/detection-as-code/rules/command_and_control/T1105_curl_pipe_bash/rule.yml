@@ -1,0 +1,35 @@
+title: Ingress Tool Transfer via curl-piped-to-shell
+id: 8a3f6c1e-1105-4000-aaaa-curlpipe01
+status: experimental
+description: |
+  Detects the curl-piped-to-shell pattern (curl ... | bash, wget ... | sh) — a textbook
+  ingress tool transfer technique used for installer-style malware delivery.
+references:
+  - https://attack.mitre.org/techniques/T1105/
+author: synthetic-portfolio
+date: 2026/04/22
+tags:
+  - attack.command_and_control
+  - attack.t1105
+logsource:
+  category: process_creation
+  product: linux
+detection:
+  selection_curl_or_wget:
+    process.name:
+      - 'bash'
+      - 'sh'
+    process.parent.cmdline|contains:
+      - 'curl '
+      - 'wget '
+  selection_pipe:
+    process.parent.cmdline|contains:
+      - '| bash'
+      - '| sh'
+      - '|bash'
+      - '|sh'
+  condition: selection_curl_or_wget and selection_pipe
+falsepositives:
+  - Some legitimate package install scripts use this pattern (e.g., `curl https://get.docker.com | sh`).
+    Investigate the URL and the requester.
+level: high

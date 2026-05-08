@@ -1,0 +1,3 @@
+{"Image":"C:\\Windows\\System32\\schtasks.exe","CommandLine":"schtasks.exe /create /tn MaintenanceJob /tr \"C:\\Program Files\\Vendor\\maintain.exe\" /sc weekly","User":"server01\\svc_admin","ParentImage":"installer.exe","_note":"task pointing at Program Files (signed install path) — not user-writable"}
+{"Image":"C:\\Windows\\System32\\schtasks.exe","CommandLine":"schtasks.exe /query","User":"finance03\\jsmith","ParentImage":"explorer.exe","_note":"schtasks /query — read only, no /create"}
+{"Image":"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe","CommandLine":"powershell.exe Get-ScheduledTask","User":"server01\\admin","ParentImage":"explorer.exe","_note":"PowerShell cmdlet, not schtasks.exe"}

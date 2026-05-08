@@ -1,0 +1,31 @@
+title: Remote Admin Share Access via SMB
+id: 8a3f6c1e-1021-4002-aaaa-adminshare01
+status: experimental
+description: |
+  Detects access to administrative shares (ADMIN$, C$, IPC$) over SMB from a remote host.
+  Admin-share access is a common pattern for lateral movement (psexec-style) and is rarely
+  legitimate outside of explicit administration tooling.
+references:
+  - https://attack.mitre.org/techniques/T1021/002/
+author: synthetic-portfolio
+date: 2026/04/22
+tags:
+  - attack.lateral_movement
+  - attack.t1021.002
+logsource:
+  product: windows
+  service: security
+  category: file_access
+detection:
+  selection:
+    EventID: 5140
+    ShareName|endswith:
+      - '\ADMIN$'
+      - '\C$'
+      - '\IPC$'
+  filter_local:
+    SourceAddress: '127.0.0.1'
+  condition: selection and not filter_local
+falsepositives:
+  - Backup tooling, Windows administration tools (RSAT), or domain join operations.
+level: medium
