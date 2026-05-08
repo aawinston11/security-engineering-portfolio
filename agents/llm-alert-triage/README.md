@@ -24,9 +24,11 @@ Findings (untuned prompt):
 - Both backends share the same severity over-calibration: 40% exact match, with ~6/15 predicted one step higher than ground truth.
 - Both backends miss the same `needs_investigation` cases (ALERT-007, ALERT-009) — they both classify ambiguous activity as `true_positive` instead of flagging the ambiguity.
 
-### Prompt-tuning iteration (tested, rolled back)
+### Prompt-tuning journey (three iterations, shipped state at the end)
 
-The first tuning attempt addressed all three findings: explicit severity-calibration table, an "ambiguity case" list for `needs_investigation`, and a MITRE technique-pruning rule. Re-running both backends against the same dataset produced an **asymmetric result** the eval correctly surfaced:
+Each iteration is preserved as portfolio evidence — the path matters more than the destination.
+
+**Iteration 1: a single shared "elaborated" prompt.** Severity calibration table + ambiguity-case list for `needs_investigation` + MITRE pruning rule. Re-running both backends produced an asymmetric result the multi-provider eval surfaced:
 
 | Metric | Anthropic Δ | OpenAI Δ |
 |---|---|---|
@@ -34,13 +36,36 @@ The first tuning attempt addressed all three findings: explicit severity-calibra
 | Severity accuracy | +13pt (40% → 53%) | **+20pt** (40% → 60%) |
 | MITRE technique IoU | −0.07 (0.19 → 0.12) | **+0.17** (0.21 → 0.38) |
 | Schema validity | −20pt (100% → 80%) | 0 (100% → 100%) |
-| Total cost | +$0.26 ($0.26 → $0.52) | ≈0 ($0.06 → $0.058) |
 
-OpenAI gpt-5-mini benefitted across the board — severity calibration and MITRE pruning both improved. Anthropic Sonnet 4.6 read the new "use needs_investigation when ambiguous" framing as permission to hedge and started returning `needs_investigation` for cases that should be definitive (ALERT-005 rundll32 from temp; ALERT-014 service account login). Sonnet's verdict accuracy collapsed by 27 points.
+OpenAI gpt-5-mini broadly improved. Anthropic Sonnet 4.6 read "use `needs_investigation` when ambiguous" as permission to hedge and over-applied it on cases that should be definitive (ALERT-005 rundll32 from temp; ALERT-014 service account login). Verdict accuracy collapsed.
 
-Decision: **roll back to the untuned prompt** (above) for the shipped state — it's the cleanest baseline for the default Anthropic backend, and the prompt-tuning experiment is now documented evidence rather than a regression. The asymmetric result is itself the senior-level finding: a single shared prompt that's optimal for both providers may not exist, and provider-specific prompts (or a more carefully hedged shared prompt) are the right next iteration.
+**Iteration 2: reframe `needs_investigation` to require *conflicting* evidence, not mere uncertainty.** Smaller magnitude, same asymmetric pattern:
 
-The eval harness existing is what made this discoverable. Without it, the tuning would have shipped and Anthropic users would have seen a quiet 27-point regression.
+| Metric | Anthropic v0 → v2 | OpenAI v0 → v2 |
+|---|---|---|
+| Verdict accuracy | 67% → 53% (**−14pt**) | 53% → 53% (0) |
+| Severity accuracy | 40% → 60% (+20pt) | 40% → 67% (**+27pt**) |
+| MITRE technique IoU | 0.19 → 0.38 (+0.19) | 0.21 → 0.31 (+0.10) |
+| Schema validity | 100% → 87% (−13pt) | 100% → 100% (0) |
+
+Better than v1 on Anthropic (verdict regression halved, schema regression smaller), but the asymmetry persisted. v2 helps OpenAI cleanly; trades 14 points of Anthropic verdict for severity/MITRE gains.
+
+**Iteration 3 (shipped): provider-specific prompts.** `PROMPTS_BY_BACKEND` in `agent.py` routes each backend to the prompt that wins for it:
+- `anthropic` → baseline (preserves the 67% verdict accuracy)
+- `openai` → calibrated (severity 67%, MITRE IoU 0.31)
+- `ollama` → baseline (placeholder; revisit when Ollama wires up)
+
+| Metric | Anthropic (baseline) | OpenAI (calibrated) |
+|---|---|---|
+| Verdict accuracy | **67%** (10/15) | 53% (8/15) |
+| Severity accuracy | 40% | **67%** |
+| MITRE technique IoU | 0.19 | 0.31 |
+| Schema validity | 100% | 100% |
+| Total cost (run) | $0.26 | $0.08 |
+
+Each provider lands at its individual best. The asymmetry isn't a bug — different model families have different default postures (Sonnet decisive; gpt-5-mini cautious), and the right engineering response is a small per-provider adapter, not heroic prompt gymnastics chasing a single Pareto-optimal text.
+
+This entire arc is the senior-level finding. Single-provider evals would have shipped iteration 1 as a small severity win; the multi-provider eval surfaced the regression, two iterations of prompt work surfaced the asymmetry's persistence, and the engineering response (per-provider routing) is documented and shipped. Long-form: [notes/writeups/cross-provider-prompt-asymmetry.md](../../notes/writeups/cross-provider-prompt-asymmetry.md).
 
 ---
 
