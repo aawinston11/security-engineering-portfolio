@@ -1,10 +1,40 @@
 # Security Engineering Portfolio
 
+[![ci](https://github.com/aawinston11/security-engineering-portfolio/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/aawinston11/security-engineering-portfolio/actions/workflows/ci.yml) [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE) [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
+
 **Secure by default. Automated by design.**
 
 Security operations engineer (8 years, CISSP) focused on AI-augmented detection, response, and platform tooling for SecOps. This is the public-facing version of work I do day-to-day: agentic security tooling, detection-as-code with closed-loop validation, and the small handful of foundations that hold it all up.
 
 Work is **AI-assisted, human-validated**. Sample data is synthetic; nothing here references any employer system, customer telemetry, or production network.
+
+---
+
+## Architecture
+
+```mermaid
+flowchart LR
+    subgraph A["Pillar 1 — Agents (AI / agentic security)"]
+        direction LR
+        MCP["MCP Security<br/>Tooling Server<br/>(5 read tools)"]
+        Triage["LLM Alert<br/>Triage<br/>(Anthropic + OpenAI)"]
+        IR["IR Copilot<br/>(prompt-injection<br/>resistant)"]
+        Triage -->|stdio MCP| MCP
+    end
+    subgraph D["Pillar 2 — Detection & Automation"]
+        direction LR
+        DAC["Detection-as-Code<br/>(Sigma + purple-team<br/>validation)"]
+    end
+    subgraph F["Pillar 3 — Foundations"]
+        direction LR
+        Hard["Linux Hardening<br/>Role (Ansible)"]
+    end
+    Eval["Cross-provider<br/>eval harness"]:::eval -.->|scores| Triage
+    Eval -.->|scores| IR
+    classDef eval fill:#fef3c7,stroke:#f59e0b,stroke-width:2px,color:#000
+```
+
+The triage agent and IR copilot consume MCP tools from the same server (one MCP surface, multiple agent consumers — the right shape for SecOps tool reuse). The eval harness scores both agents on the same labeled datasets across both LLM providers (apples-to-apples comparison; surfaced a real provider-asymmetric prompt-tuning regression — see [notes/writeups/cross-provider-prompt-asymmetry.md](notes/writeups/cross-provider-prompt-asymmetry.md)).
 
 ---
 
