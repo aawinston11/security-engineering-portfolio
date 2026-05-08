@@ -1,0 +1,8 @@
+{"hostname":"finance03","ip":"198.51.100.103","os":"Windows 11","owner":"jsmith","department":"finance","criticality":"standard","tags":["endpoint","financials-access"]}
+{"hostname":"finance04","ip":"198.51.100.104","os":"Windows 11","owner":"agarcia","department":"finance","criticality":"standard","tags":["endpoint"]}
+{"hostname":"finance-db-01","ip":"198.51.100.150","os":"Windows Server 2022","owner":"dba-team","department":"finance","criticality":"critical","tags":["server","database","pii"]}
+{"hostname":"hr-laptop-04","ip":"198.51.100.184","os":"Windows 11","owner":"mchen","department":"hr","criticality":"standard","tags":["endpoint","laptop"]}
+{"hostname":"web01","ip":"203.0.113.10","os":"Ubuntu 22.04 LTS","owner":"platform-team","department":"engineering","criticality":"high","tags":["server","web-tier","public-facing"]}
+{"hostname":"web02","ip":"203.0.113.11","os":"Ubuntu 22.04 LTS","owner":"platform-team","department":"engineering","criticality":"high","tags":["server","web-tier","public-facing"]}
+{"hostname":"dc01","ip":"198.51.100.10","os":"Windows Server 2022","owner":"identity-team","department":"engineering","criticality":"critical","tags":["server","domain-controller"]}
+{"hostname":"dev-laptop-01","ip":"198.51.100.181","os":"Windows 11","owner":"tjohnson","department":"engineering","criticality":"standard","tags":["endpoint","laptop","developer"]}
