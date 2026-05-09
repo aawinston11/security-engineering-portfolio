@@ -1,0 +1,12 @@
+# Pre-commit hooks. Install once with: `pre-commit install`
+# Update hook versions with: `pre-commit autoupdate`
+#
+# gitleaks scans staged files for secrets before they enter git history.
+# It catches the .env/API-key class of mistakes that are the most common
+# real-world breach vector for portfolio-style repos.
+
+repos:
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: 83d9cd684c87d95d656c1458ef04895a7f1cbd8e  # v8.30.1
+    hooks:
+      - id: gitleaks
