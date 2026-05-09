@@ -68,7 +68,10 @@ Single-turn — no tool calls, no agentic loop. The transcript is the entire inp
 
 ## Run it
 
+**Prerequisites:** Python 3.11+, [`uv`](https://docs.astral.sh/uv/) (`brew install uv` or `curl -LsSf https://astral.sh/uv/install.sh | sh`), and `ANTHROPIC_API_KEY` and/or `OPENAI_API_KEY` in a repo-root `.env` (gitignored; copy `.env.example` to start) or your shell environment. No Docker required for this project.
+
 ```bash
+make help                                                       # list all targets
 make setup                                                      # uv sync (Python 3.11+)
 
 # Configure keys: copy .env.example to .env at the repo root, fill in your keys.
@@ -85,12 +88,11 @@ LLM_BACKEND=openai make redteam
 # Single transcript (good for inspecting the structured IR doc)
 make run                                                        # defaults to INC-001
 uv run python -m ir_copilot.cli run RT-001-status-flip          # any transcript_id
+uv run python -m ir_copilot.cli --help                          # full CLI usage
 
 # Tests (no LLM, no Docker)
 make test
 ```
-
-Prerequisites: Python 3.11+, [`uv`](https://docs.astral.sh/uv/), `ANTHROPIC_API_KEY` and/or `OPENAI_API_KEY` in `.env` at the repo root or in the shell.
 
 ### Backend selection
 

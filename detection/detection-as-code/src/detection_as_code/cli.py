@@ -113,10 +113,32 @@ def cmd_convert_spl() -> int:
     return 0
 
 
+USAGE = """\
+usage: python -m detection_as_code.cli {lint | validate-attack-mappings | purple-team | navigator | convert-spl}
+
+Commands:
+  lint                       Schema check on every rule (required fields, levels, ATT&CK tags, fixtures)
+  validate-attack-mappings   Assert every rule has at least one ATT&CK technique tag
+  purple-team                Replay positive + negative fixtures through the Sigma evaluator
+  navigator                  Emit ATT&CK Navigator JSON layer (build/attack-navigator-layer.json)
+  convert-spl                Convert each rule to Splunk SPL via sigma-cli (writes generated-spl/)
+
+Examples:
+  uv run python -m detection_as_code.cli lint
+  uv run python -m detection_as_code.cli purple-team
+  uv run python -m detection_as_code.cli navigator
+"""
+
+
 def main() -> None:
-    if len(sys.argv) < 2:
-        sys.exit("usage: cli.py {lint | validate-attack-mappings | purple-team | navigator | convert-spl}")
-    cmd = sys.argv[1]
+    args = sys.argv[1:]
+    if not args:
+        print(USAGE, file=sys.stderr)
+        sys.exit(2)
+    if args[0] in ("--help", "-h", "help"):
+        print(USAGE)
+        sys.exit(0)
+    cmd = args[0]
     funcs = {
         "lint": cmd_lint,
         "validate-attack-mappings": cmd_validate_attack_mappings,
@@ -125,7 +147,8 @@ def main() -> None:
         "convert-spl": cmd_convert_spl,
     }
     if cmd not in funcs:
-        sys.exit(f"unknown command: {cmd!r}")
+        print(f"unknown command: {cmd!r}\n\n{USAGE}", file=sys.stderr)
+        sys.exit(2)
     sys.exit(funcs[cmd]())
 
 

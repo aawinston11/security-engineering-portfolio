@@ -38,6 +38,24 @@ The triage agent and IR copilot consume MCP tools from the same server (one MCP 
 
 ---
 
+## See it run in 30 seconds (no API key needed)
+
+```bash
+git clone https://github.com/aawinston11/security-engineering-portfolio.git
+cd security-engineering-portfolio/agents/mcp-security-tooling
+make siem-up && make demo    # spawns the MCP server, exercises all 5 tools, prints real output
+```
+
+For the detection corpus (also no API key, no Docker — pure Python, 2 seconds end-to-end):
+
+```bash
+cd detection/detection-as-code && make setup && make all
+```
+
+The agent projects (`make eval` on `agents/llm-alert-triage` and `agents/ir-copilot`) need an `ANTHROPIC_API_KEY` or `OPENAI_API_KEY`. See per-project READMEs.
+
+---
+
 ## Flagship projects
 
 ### Agents — AI / agentic security (the headline pillar)

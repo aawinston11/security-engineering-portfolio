@@ -1,0 +1,45 @@
+version: 2
+
+updates:
+  # GitHub Actions — keep SHA-pinned actions current. Dependabot opens PRs
+  # that bump the SHA and update the trailing version comment.
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "chore(ci)"
+
+  # Python deps for each project (uv-managed, pyproject.toml + uv.lock).
+  - package-ecosystem: pip
+    directory: "/agents/ir-copilot"
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "chore(ir-copilot)"
+
+  - package-ecosystem: pip
+    directory: "/agents/llm-alert-triage"
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "chore(alert-triage)"
+
+  - package-ecosystem: pip
+    directory: "/agents/mcp-security-tooling"
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "chore(mcp-tooling)"
+
+  - package-ecosystem: pip
+    directory: "/detection/detection-as-code"
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "chore(detection)"

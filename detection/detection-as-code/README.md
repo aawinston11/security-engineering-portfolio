@@ -50,7 +50,10 @@ The **fixture pattern is the load-bearing convention**. Every positive fixture i
 
 ## Run it
 
+**Prerequisites:** Python 3.11+, [`uv`](https://docs.astral.sh/uv/) (`brew install uv` or `curl -LsSf https://astral.sh/uv/install.sh | sh`). No SIEM, no Docker, no LLM. Setup-to-`make all`-green is ~2 seconds.
+
 ```bash
+make help                   # list all targets
 make setup                  # uv sync + sigma-cli + pysigma-backend-splunk
 make lint                   # schema + ATT&CK mapping + fixture presence checks
 make purple-team            # fixture-based detection validation (1 = any failure)
@@ -59,8 +62,6 @@ make convert                # writes generated-spl/<tactic>/<rule>.spl per rule
 make test                   # pytest: evaluator + corpus
 make all                    # lint + validate-attack-mappings + purple-team
 ```
-
-Prerequisites: Python 3.11+, [`uv`](https://docs.astral.sh/uv/). No SIEM, no Docker, no LLM.
 
 ## Layout
 

@@ -53,7 +53,10 @@ Letting an LLM agent take action against a SIEM or EDR is mostly a tooling probl
 
 ## Run it
 
+**Prerequisites:** Python 3.11+, [`uv`](https://docs.astral.sh/uv/) (`brew install uv` or `curl -LsSf https://astral.sh/uv/install.sh | sh`), Docker.
+
 ```bash
+make help           # list all targets
 make setup          # uv sync (Python 3.11+ required)
 make siem-up        # docker compose: SIEM mock at http://localhost:8765
 make demo           # spawn server, list 5 tools, exercise each end-to-end
@@ -78,8 +81,6 @@ To use the server from Claude Desktop, add to your `claude_desktop_config.json`:
   }
 }
 ```
-
-Prerequisites: Python 3.11+, [`uv`](https://docs.astral.sh/uv/), Docker.
 
 ## Layout
 

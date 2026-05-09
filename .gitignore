@@ -28,3 +28,4 @@ htmlcov/
 
 # OS
 Thumbs.db
+.gstack/
