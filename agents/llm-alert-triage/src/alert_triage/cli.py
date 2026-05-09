@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import os
 import sys
 from pathlib import Path
 
@@ -22,6 +23,49 @@ from .schema import Alert  # noqa: E402
 
 DATA_DIR = Path(__file__).resolve().parents[2] / "data"
 
+USAGE = """\
+usage: python -m alert_triage.cli {run [alert_id] | eval}
+
+Commands:
+  run [alert_id]   Triage one alert (default: first in dataset)
+  eval             Run the eval harness on all 15 labeled alerts
+
+Environment:
+  LLM_BACKEND              anthropic (default) | openai | ollama (stub)
+  ANTHROPIC_API_KEY        required when LLM_BACKEND=anthropic
+  ANTHROPIC_MODEL          override model (default: claude-sonnet-4-6)
+  OPENAI_API_KEY           required when LLM_BACKEND=openai
+  OPENAI_MODEL             override model (default: gpt-5-mini)
+  OPENAI_REASONING_EFFORT  default: medium (set empty to omit)
+
+Examples:
+  uv run python -m alert_triage.cli run
+  uv run python -m alert_triage.cli run ALERT-007
+  LLM_BACKEND=openai uv run python -m alert_triage.cli eval
+"""
+
+VALID_BACKENDS = ("anthropic", "openai", "ollama")
+KEY_BY_BACKEND = {"anthropic": "ANTHROPIC_API_KEY", "openai": "OPENAI_API_KEY"}
+
+
+def _check_backend_and_key() -> None:
+    """Validate LLM_BACKEND and the required API key before kicking off async work.
+    Surfaces a single fixable line instead of a Python traceback or raw SDK error."""
+    backend = os.environ.get("LLM_BACKEND", "anthropic").lower()
+    if backend not in VALID_BACKENDS:
+        sys.exit(
+            f"LLM_BACKEND={backend!r} is invalid. "
+            f"Valid: {', '.join(VALID_BACKENDS)}."
+        )
+    required = KEY_BY_BACKEND.get(backend)
+    if required and not os.environ.get(required):
+        sys.exit(
+            f"{required} not set for LLM_BACKEND={backend}. Either:\n"
+            f"  cp .env.example .env && $EDITOR .env   (at the repo root)\n"
+            f"  export {required}=<your-key>           (in the shell)\n"
+            f"\n.env is gitignored. Never commit it."
+        )
+
 
 async def _run_one(alert_id: str | None = None) -> None:
     rows = [
@@ -30,9 +74,14 @@ async def _run_one(alert_id: str | None = None) -> None:
         if line.strip()
     ]
     if alert_id:
+        all_ids = [a.alert_id for a in rows]
+        if alert_id not in all_ids:
+            preview = ", ".join(all_ids[:5]) + (", ..." if len(all_ids) > 5 else "")
+            sys.exit(
+                f"alert_id {alert_id!r} not found. Valid IDs: {preview}\n"
+                f"Full list: data/alerts.jsonl"
+            )
         rows = [a for a in rows if a.alert_id == alert_id]
-        if not rows:
-            sys.exit(f"alert_id {alert_id!r} not found")
     alert = rows[0]
     print(f"Triaging {alert.alert_id} — {alert.name}")
     print(f"  host={alert.host} user={alert.user} raw_severity={alert.raw_severity}\n")
@@ -71,16 +120,24 @@ async def _run_one(alert_id: str | None = None) -> None:
 
 
 def main() -> None:
-    if len(sys.argv) < 2:
-        sys.exit("usage: cli.py {run [alert_id] | eval}")
-    cmd = sys.argv[1]
+    args = sys.argv[1:]
+    if not args:
+        print(USAGE, file=sys.stderr)
+        sys.exit(2)
+    if args[0] in ("--help", "-h", "help"):
+        print(USAGE)
+        sys.exit(0)
+    cmd = args[0]
     if cmd == "run":
-        alert_id = sys.argv[2] if len(sys.argv) > 2 else None
+        _check_backend_and_key()
+        alert_id = args[1] if len(args) > 1 else None
         asyncio.run(_run_one(alert_id))
     elif cmd == "eval":
+        _check_backend_and_key()
         asyncio.run(run_eval())
     else:
-        sys.exit(f"unknown command: {cmd!r}")
+        print(f"unknown command: {cmd!r}\n\n{USAGE}", file=sys.stderr)
+        sys.exit(2)
 
 
 if __name__ == "__main__":

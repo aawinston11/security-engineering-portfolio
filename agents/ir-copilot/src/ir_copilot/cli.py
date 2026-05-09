@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import os
 import sys
 from pathlib import Path
 
@@ -17,6 +18,51 @@ from .schema import Transcript  # noqa: E402
 
 DATA_DIR = Path(__file__).resolve().parents[2] / "data"
 
+USAGE = """\
+usage: python -m ir_copilot.cli {run [transcript_id] | eval | redteam}
+
+Commands:
+  run [transcript_id]  Generate one IR doc (default: first in dataset)
+  eval                 Score 5 happy-path transcripts (schema, status, severity)
+  redteam              Run 3 prompt-injection cases; assert defenses hold
+
+Environment:
+  LLM_BACKEND              anthropic (default) | openai | ollama (stub)
+  ANTHROPIC_API_KEY        required when LLM_BACKEND=anthropic
+  ANTHROPIC_MODEL          override model (default: claude-sonnet-4-6)
+  OPENAI_API_KEY           required when LLM_BACKEND=openai
+  OPENAI_MODEL             override model (default: gpt-5-mini)
+  OPENAI_REASONING_EFFORT  default: medium (set empty to omit)
+
+Examples:
+  uv run python -m ir_copilot.cli run
+  uv run python -m ir_copilot.cli run INC-002
+  uv run python -m ir_copilot.cli redteam
+  LLM_BACKEND=openai uv run python -m ir_copilot.cli eval
+"""
+
+VALID_BACKENDS = ("anthropic", "openai", "ollama")
+KEY_BY_BACKEND = {"anthropic": "ANTHROPIC_API_KEY", "openai": "OPENAI_API_KEY"}
+
+
+def _check_backend_and_key() -> None:
+    """Validate LLM_BACKEND and the required API key before kicking off async work.
+    Surfaces a single fixable line instead of a Python traceback or raw SDK error."""
+    backend = os.environ.get("LLM_BACKEND", "anthropic").lower()
+    if backend not in VALID_BACKENDS:
+        sys.exit(
+            f"LLM_BACKEND={backend!r} is invalid. "
+            f"Valid: {', '.join(VALID_BACKENDS)}."
+        )
+    required = KEY_BY_BACKEND.get(backend)
+    if required and not os.environ.get(required):
+        sys.exit(
+            f"{required} not set for LLM_BACKEND={backend}. Either:\n"
+            f"  cp .env.example .env && $EDITOR .env   (at the repo root)\n"
+            f"  export {required}=<your-key>           (in the shell)\n"
+            f"\n.env is gitignored. Never commit it."
+        )
+
 
 async def _run_one(transcript_id: str | None = None) -> None:
     rows = [
@@ -25,9 +71,14 @@ async def _run_one(transcript_id: str | None = None) -> None:
         if line.strip()
     ]
     if transcript_id:
+        all_ids = [t.transcript_id for t in rows]
+        if transcript_id not in all_ids:
+            preview = ", ".join(all_ids[:5]) + (", ..." if len(all_ids) > 5 else "")
+            sys.exit(
+                f"transcript_id {transcript_id!r} not found. Valid IDs: {preview}\n"
+                f"Full list: data/transcripts.jsonl"
+            )
         rows = [t for t in rows if t.transcript_id == transcript_id]
-        if not rows:
-            sys.exit(f"transcript_id {transcript_id!r} not found")
     transcript = rows[0]
     print(f"Generating IR doc for {transcript.transcript_id} ({transcript.channel})")
     print(f"  {len(transcript.messages)} transcript messages\n")
@@ -71,18 +122,27 @@ async def _run_one(transcript_id: str | None = None) -> None:
 
 
 def main() -> None:
-    if len(sys.argv) < 2:
-        sys.exit("usage: cli.py {run [transcript_id] | eval | redteam}")
-    cmd = sys.argv[1]
+    args = sys.argv[1:]
+    if not args:
+        print(USAGE, file=sys.stderr)
+        sys.exit(2)
+    if args[0] in ("--help", "-h", "help"):
+        print(USAGE)
+        sys.exit(0)
+    cmd = args[0]
     if cmd == "run":
-        tid = sys.argv[2] if len(sys.argv) > 2 else None
+        _check_backend_and_key()
+        tid = args[1] if len(args) > 1 else None
         asyncio.run(_run_one(tid))
     elif cmd == "eval":
+        _check_backend_and_key()
         asyncio.run(run_eval())
     elif cmd == "redteam":
+        _check_backend_and_key()
         asyncio.run(run_redteam())
     else:
-        sys.exit(f"unknown command: {cmd!r}")
+        print(f"unknown command: {cmd!r}\n\n{USAGE}", file=sys.stderr)
+        sys.exit(2)
 
 
 if __name__ == "__main__":

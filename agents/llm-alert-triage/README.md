@@ -106,7 +106,10 @@ LLM-based alert triage is easy to demo and hard to trust. The interesting questi
 
 ## Run it
 
+**Prerequisites:** Python 3.11+, [`uv`](https://docs.astral.sh/uv/) (`brew install uv` or `curl -LsSf https://astral.sh/uv/install.sh | sh`), Docker (for the sibling SIEM mock), and `ANTHROPIC_API_KEY` and/or `OPENAI_API_KEY` depending on the backend. Keys live in a repo-root `.env` (gitignored; copy `.env.example` to start) or in your shell environment.
+
 ```bash
+make help                                                  # list all targets
 make setup                                                 # uv sync (Python 3.11+)
 
 # Configure keys: copy .env.example to .env at the repo root, fill in your keys.
@@ -127,14 +130,13 @@ LLM_BACKEND=openai OPENAI_MODEL=gpt-5 make eval
 # Single alert
 make run                                                   # ALERT-001 by default
 uv run python -m alert_triage.cli run ALERT-007            # specific alert id
+uv run python -m alert_triage.cli --help                   # full CLI usage
 
 # Tests (no LLM, no Docker)
 make test
 ```
 
 `make siem-up` brings up the SIEM mock from the sibling MCP project; `run` and `eval` invoke it as a prereq.
-
-Prerequisites: Python 3.11+, [`uv`](https://docs.astral.sh/uv/), Docker, plus `ANTHROPIC_API_KEY` or `OPENAI_API_KEY` depending on which backend you select. Keys are picked up from a repo-root `.env` file (gitignored; copy `.env.example` to start) or from your shell environment.
 
 ### Backend selection summary
 
