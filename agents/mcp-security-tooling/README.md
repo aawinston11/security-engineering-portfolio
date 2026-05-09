@@ -4,6 +4,8 @@ A Model Context Protocol server that exposes a synthetic SIEM/EDR API to LLM age
 
 **Status: Beta.** Five working tools (`search_events`, `search_alerts`, `get_alert`, `list_hosts`, `enrich_indicator`) backed by four synthetic datasets (events, alerts, hosts, indicators). HMAC-chained audit log verifies on every write. End-to-end verified: 18/18 tests, demo client exercises every tool.
 
+![demo: make siem-up && make demo — spawns the MCP server, exercises all 5 tools, prints structured output](docs/demo.gif)
+
 ---
 
 ## Problem
