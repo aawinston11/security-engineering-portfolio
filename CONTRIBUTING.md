@@ -90,6 +90,41 @@ Long-running work happens on feature branches off `main`. The `restructure-pilla
 
 Destructive git ops (force push, branch delete, history rewrite) need explicit per-action authorization. Don't let a tool blanket-authorize them.
 
+## Merging to `main` (PR workflow, required)
+
+`main` is protected. Direct pushes are rejected unless all four CI jobs (`detection-as-code`, `mcp-security-tooling`, `llm-alert-triage`, `ir-copilot`) have passed on the exact commit SHA being pushed. Force-push and branch deletion are blocked. Admin (the repo owner) can override in emergencies; nobody else can.
+
+The supported workflow is PR-based:
+
+```bash
+# Push your work to the integration branch
+git push origin restructure-pillars
+
+# Open a PR against main
+gh pr create --base main --head restructure-pillars \
+  --title "Merge restructure-pillars: <one-line summary>" \
+  --body "<what shipped, why, anything to watch>"
+
+# CI runs against the PR's merge commit. When all 4 jobs are green:
+gh pr merge --merge        # preserves the --no-ff merge commit pattern
+                           # (--squash for flat history; --rebase for linear, both allowed)
+```
+
+Why this is the workflow, not "annoying overhead":
+- Every merge commit on `main` had green CI on its exact SHA *before* it landed. No "I'll just push and let CI tell me" drift.
+- Each PR is a permanent, linkable artifact: description, diff, checks, conversation. Recruiters scrolling the Pull Requests tab see the project's history as reviewable units.
+- Branch protection settings are publicly visible via the GitHub API. "Yes, `main` is protected" is itself a portfolio signal.
+
+The `restructure-pillars` branch is recreated from `main` after each merge:
+
+```bash
+git checkout main && git pull origin main
+git branch -D restructure-pillars                         # local cleanup; remote auto-deleted by gh pr merge --delete-branch
+git checkout -b restructure-pillars && git push -u origin restructure-pillars
+```
+
+Or just keep using the existing branch — `git pull origin main` into it, resolve any conflicts, and continue.
+
 ## Adding a new project to the portfolio
 
 1. Pick the right pillar: `agents/`, `detection/`, or `foundations/`.
